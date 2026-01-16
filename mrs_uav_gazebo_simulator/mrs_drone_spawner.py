@@ -209,8 +209,11 @@ class MrsDroneSpawner(Node):
         self.diagnostics_timer = self.create_timer(0.1, self.callback_diagnostics_timer)
         self.action_timer = self.create_timer(0.1, self.callback_action_timer)
 
-        self.gazebo_spawn_proxy = self.create_client(SpawnEntity, 'create_entity')
-        self.gazebo_delete_proxy = self.create_client(DeleteEntity, 'delete_entity')
+        # Connect to bridged Gazebo services via ros_gz_bridge
+        self.gazebo_spawn_service_name = '/ros_gz_bridge/create_entity'
+        self.gazebo_delete_service_name = '/ros_gz_bridge/delete_entity'
+        self.gazebo_spawn_proxy = self.create_client(SpawnEntity, self.gazebo_spawn_service_name)
+        self.gazebo_delete_proxy = self.create_client(DeleteEntity, self.gazebo_delete_service_name)
 
         # Setup system variables
         self.spawn_called = False
@@ -470,8 +473,8 @@ class MrsDroneSpawner(Node):
 
     # #{ callback_spawn(self, request, response)
     def callback_spawn(self, request, response):
-        if not self.gazebo_spawn_proxy.wait_for_service(timeout_sec=5.0):
-            service_name = self.gazebo_spawn_proxy.service_name
+        if not self.gazebo_spawn_proxy.wait_for_service(timeout_sec=30.0):
+            service_name = self.gazebo_spawn_service_name
             self.get_logger().error(f'Gazebo spawn service "{service_name}" not available.')
             response.success = False
             response.message =  f'Gazebo spawn service "{service_name}" not available.'
