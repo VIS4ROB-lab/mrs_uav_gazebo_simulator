@@ -56,6 +56,14 @@ class SdfTfPublisherSingleton(metaclass=SingletonMeta):
 
     # #}
 
+    # #{ generate_tf_publishers(self, sdf_xml)
+    def generate_tf_publishers(self, sdf_xml):
+        # Backward-compatible wrapper used by the spawner
+        self.generate_sensor_tfs(sdf_xml)
+        self.publish_sensor_tfs()
+
+    # #}
+
     # #{ _detect_sensors_transformations(self, links_to_sensors)
     def _detect_sensors_transformations(self, links_to_sensors):
         for link_name, data in links_to_sensors.items():

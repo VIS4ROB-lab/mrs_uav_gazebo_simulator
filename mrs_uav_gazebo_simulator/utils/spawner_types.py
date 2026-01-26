@@ -1,4 +1,11 @@
-from enum import Enum, StrEnum
+try:
+    from enum import Enum, StrEnum
+except ImportError:
+    # Python < 3.11 fallback
+    from enum import Enum
+
+    class StrEnum(str, Enum):
+        pass
 from typing import TypedDict
 from dataclasses import dataclass
 
