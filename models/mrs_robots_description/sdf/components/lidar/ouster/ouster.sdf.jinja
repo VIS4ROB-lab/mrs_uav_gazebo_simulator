@@ -14,6 +14,9 @@
     {# model selection {--> #}
     {%- set sensor_name = 'ouster' -%}
     {%- set ouster_model = spawner_args[spawner_keyword]['model'] -%}
+    {%- set sensor_link_name = sensor_name -%}
+    {%- set lidar_gz_frame_id = spawner_args['name'] + '/' + sensor_name + '/lidar' -%}
+    {%- set imu_gz_frame_id = spawner_args['name'] + '/' + sensor_name + '/imu' -%}
 
     {# OS0 {--> #}
 
@@ -124,9 +127,9 @@
     {# <!--}--> #}
 
     <!-- Ouster {-->
-    <link name="{{sensor_name}}_link">
+    <link name="{{ sensor_link_name }}">
 
-      <pose relative_to="{{parent_link}}">{{ x }} {{ y }} {{ z }} {{ roll }} {{ pitch }} {{ yaw }}</pose>
+      <pose relative_to="{{ parent_link }}">{{ x }} {{ y }} {{ z }} {{ roll }} {{ pitch }} {{ yaw }}</pose>
       {{ generic.zero_inertial_macro() }}
 
       <!-- visuals {-->
@@ -160,10 +163,11 @@
       <!--}-->
 
       <!-- sensor + plugin {-->
-      {{ generic.gazebo_lidar_plugin_macro(
-          lidar_name = sensor_name,
-          lidar_frame_name = spawner_args['name'] + '/' + sensor_name + '_link',
-          lidar_topic_name = spawner_args['name'] + '/' + sensor_name,
+      {{ generic.gazebo_threed_lidar_plugin_macro(
+          lidar_gz_frame_id = lidar_gz_frame_id,
+          lidar_sdf_topic_name = spawner_args['name'] + '/' + sensor_name,
+          lidar_gz_topic_name = spawner_args['name'] + '/' + sensor_name + '/points',
+          lidar_ros_topic_name = spawner_args['name'] + '/' + sensor_name + '/points',
           sensor_x = lidar_x, sensor_y = lidar_y, sensor_z = lidar_z, sensor_roll = lidar_roll, sensor_pitch =lidar_pitch, sensor_yaw =lidar_yaw,
           update_rate = spawner_args[spawner_keyword]['update_rate'],
           horiz_num_samples = spawner_args[spawner_keyword]['horizontal_samples'],
@@ -178,15 +182,36 @@
           range_max = range,
           range_resolution = 0.03,
           noise_mean = 0.0,
-          noise_std= spawner_args[spawner_keyword]['noise']
-      )}}
+          noise_std= spawner_args[spawner_keyword]['noise'])
+      }}
+      {{ generic.imu_sensor_macro(
+        name = sensor_name,
+        update_rate = 250,
+        imu_gz_frame_id = imu_gz_frame_id,
+        imu_sdf_topic_name = spawner_args['name'] + '/' + sensor_name + '/imu',
+        imu_gz_topic_name = spawner_args['name'] + '/' + sensor_name + '/imu',
+        imu_ros_topic_name = spawner_args['name'] + '/' + sensor_name + '/imu',
+        sensor_x = 0.0, sensor_y = 0.0, sensor_z = 0.0, sensor_roll = 0.0, sensor_pitch = 0.0, sensor_yaw = 0.0,
+        angular_velocity_noise_mean_x = 0.0,
+        angular_velocity_noise_std_x = 0.0008726646,
+        angular_velocity_noise_mean_y = 0.0,
+        angular_velocity_noise_std_y = 0.0008726646,
+        angular_velocity_noise_mean_z = 0.0,
+        angular_velocity_noise_std_z = 0.0008726646,
+        linear_acceleration_noise_mean_x = 0.0,
+        linear_acceleration_noise_std_x = 0.00637,
+        linear_acceleration_noise_mean_y = 0.0,
+        linear_acceleration_noise_std_y = 0.00637,
+        linear_acceleration_noise_mean_z = 0.0,
+        linear_acceleration_noise_std_z = 0.00686)
+      }}
       <!--}-->
 
     </link>
 
     <joint name="{{ sensor_name }}_joint" type="fixed">
       <parent>{{ parent_link }}</parent>
-      <child>{{ sensor_name }}_link</child>
+      <child>{{ sensor_link_name }}</child>
     </joint>
     <!--}-->
 

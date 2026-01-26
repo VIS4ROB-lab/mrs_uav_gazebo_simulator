@@ -485,7 +485,7 @@
 
       <!-- IMU {-->
       <!-- Noise modeled after IIM42653 -->
-      {{ generic.imu_sensor_macro(
+      {{ generic.imu_pixhawk_sensor_macro(
         name = "imu",
         update_rate = 250,
         angular_velocity_noise_mean_x = 0.0,
@@ -579,6 +579,19 @@
     {# ||                 optional sensor definitions                  || #}
     {# ================================================================== #}
 
+    {# Ground truth {--> #}
+    {{ components.ground_truth_macro(
+      parent_link = root,
+      x = 0,
+      y = 0,
+      z = 0,
+      roll = 0,
+      pitch = 0,
+      yaw = 0,
+      spawner_args = spawner_args)
+    }}
+    {# <!--}--> #}
+
     {# ======================= rangefinder sensors ====================== #}
 
     {# Garmin down {--> #}
@@ -660,26 +673,32 @@
 
     {# Bluefox camera placements {--> #}
 
-    {# bluefox (classic) {--> #}
-    {%- set bluefox_camera = components.bluefox_camera_macro(
-      camera_name = 'bluefox_optflow',
+    {# bluefox down {--> #}
+    {%- set bluefox_camera_down = components.bluefox_camera_down_macro(
+      camera_name = 'bluefox_down',
       parent_link = root,
       x = 0.0,
       y = -0.15,
       z = -0.057,
+      roll = 0.0,
+      pitch = math.radians(90),
+      yaw = 0.0,
       mount = none,
       spawner_args = spawner_args)
     -%}
-    {{ bluefox_camera }}
+    {{ bluefox_camera_down }}
     {# <!--}--> #}
 
     {# bluefox reverse {--> #}
     {%- set bluefox_camera_reverse = components.bluefox_camera_reverse_macro(
-      camera_name = 'bluefox_optflow',
+      camera_name = 'bluefox_reverse',
       parent_link = root,
       x = 0.0,
       y = -0.15,
       z = -0.057,
+      roll = 0.0,
+      pitch = math.radians(90),
+      yaw = math.radians(180),
       mount = none,
       spawner_args = spawner_args)
     -%}
@@ -690,8 +709,8 @@
 
     {# Mobius placements {--> #}
 
-    {# mobius front {--> #}
-    {{ components.mobius_front_macro(
+    {# Mobius front {--> #}
+    {{ components.mobius_camera_front_macro(
       camera_name = 'mobius_front',
       parent_link = root,
       x = 0.2,
@@ -707,10 +726,59 @@
 
     {# <!--}--> #}
 
+    {# Realsense placements {--> #}
+
+    {# Realsense front {--> #}
+    {{ components.realsense_front_macro(
+      camera_name = 'rgbd_front',
+      parent_link = root,
+      x = 0.196,
+      y = -0.011,
+      z = -0.063,
+      roll = 0,
+      pitch = 0,
+      yaw = 0,
+      mount = realsense_front_mount,
+      spawner_args = spawner_args)
+    }}
+    {# <!--}--> #}
+
+    {# Realsense up {--> #}
+    {{ components.realsense_up_macro(
+      camera_name = 'rgbd_up',
+      parent_link = root,
+      x = 0.08,
+      y = 0,
+      z = 0.056,
+      roll = 0,
+      pitch = -math.radians(90),
+      yaw = 0,
+      mount = none,
+      spawner_args = spawner_args)
+    }}
+    {# <!--}--> #}
+
+    {# Realsense down {--> #}
+    {{ components.realsense_down_macro(
+      camera_name = 'rgbd_down',
+      parent_link = root,
+      x = 0.1,
+      y = 0,
+      z = -0.076,
+      roll = 0,
+      pitch = math.radians(90),
+      yaw = 0,
+      mount = realsense_down_mount,
+      spawner_args = spawner_args)
+    }}
+    {# <!--}--> #}
+
+    {# <!--}--> #}
+
     {# ====================== conditional components ==================== #}
 
     {# Bluefox + Garmin mount {--> #}
-    {%- if garmin_down | replace('\s', '') | length != 0 or bluefox_camera | replace('\s', '') | length != 0 or bluefox_camera_reverse | replace('\s', '') | length != 0 -%}
+    {%- if garmin_down | replace('\s', '') | length != 0 or bluefox_camera_down | replace('\s', '') | length != 0 or bluefox_camera_reverse | replace('\s', '') | length != 0 -%}
       <!-- bluefox + garmin mount {-->
       {{ bluefox_garmin_mount }}
       <!--}-->

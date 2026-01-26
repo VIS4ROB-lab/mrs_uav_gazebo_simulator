@@ -271,7 +271,7 @@
 
       <!-- IMU {-->
       <!-- Noise modeled after IIM42653 -->
-      {{ generic.imu_sensor_macro(
+      {{ generic.imu_pixhawk_sensor_macro(
         name = "imu",
         update_rate = 250,
         angular_velocity_noise_mean_x = 0.0,
@@ -365,6 +365,19 @@
     {# ||                 optional sensor definitions                  || #}
     {# ================================================================== #}
 
+    {# Ground truth {--> #}
+    {{ components.ground_truth_macro(
+      parent_link = root,
+      x = 0,
+      y = 0,
+      z = 0,
+      roll = 0,
+      pitch = 0,
+      yaw = 0,
+      spawner_args = spawner_args)
+    }}
+    {# <!--}--> #}
+
     {# ======================= rangefinder sensors ====================== #}
 
     {# Garmin down {--> #}
@@ -392,6 +405,23 @@
       z = 0.107,
       roll = 0,
       pitch = 0,
+      yaw = 0,
+      mount = none,
+      spawner_args = spawner_args)
+    }}
+    {# <!--}--> #}
+
+    {# ========================== camera sensors ======================== #}
+
+    {# Realsense down {--> #}
+    {{ components.realsense_down_macro(
+      camera_name = 'rgbd_down',
+      parent_link = root,
+      x = 0.09,
+      y = 0,
+      z = -0.066,
+      roll = 0,
+      pitch = math.radians(90),
       yaw = 0,
       mount = none,
       spawner_args = spawner_args)
