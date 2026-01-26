@@ -173,7 +173,79 @@ class MrsDroneSpawner(Node):
                 self.get_logger().info(f'Adding extra resources from {rpath}')
                 resource_paths.append(rpath)
 
-        return resource_paths
+        self.jinja_env = self.configure_jinja2_environment(resource_paths)
+
+        time_str = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
+        tempfile_folder = f'mrs_gazebo_simulator_{time_str}'
+        self.tempfile_folder = os.path.join(tempfile.gettempdir(), tempfile_folder)
+
+        try:
+            os.makedirs(self.tempfile_folder, exist_ok=False)
+        except Exception as e:
+            raise RuntimeError(f"Error creating directory {self.tempfile_folder}: {e}")
+
+        # Find launch files
+        gazebo_simulator_path = get_package_share_directory('mrs_uav_gazebo_simulator')
+        self.uav_ros_gz_bridge_launch_path = os.path.join(gazebo_simulator_path, 'launch', 'uav_ros_gz_bridge.launch.py')
+        self.uav_ros_gz_bridge_config_path = os.path.join(gazebo_simulator_path, 'config')
+        self.uav_ros_gz_bridge_config_template_name = 'uav_ros_gz_bridge_config.yaml.jinja'
+        px4_api_path = get_package_share_directory('mrs_uav_px4_api')
+        self.mavros_launch_path = os.path.join(px4_api_path, 'launch', 'mavros.launch')
+        self.mavros_px4_config_path = os.path.join(px4_api_path, 'config')
+        self.mavros_px4_config_template_name = 'mavros_px4_config.jinja.yaml'
+        self.px4_fimrware_launch_path = os.path.join(gazebo_simulator_path, 'launch', 'run_simulation_firmware.launch.py')
+        self.mavros_plugin_list = os.path.join(self.mavros_px4_config_path, 'mavros_plugins.yaml')
+
+        try:
+            self.jinja_templates = self.build_template_database()
+        except RecursionError as err:
+            self.get_logger().error(f'{err}')
+            raise RuntimeError(f'{err}')
+
+        self.get_logger().info('Jinja templates loaded.')
+
+        # Setup ROS 2 communications
+        self.spawn_server = self.create_service(StringSrv, 'spawn', self.callback_spawn)
+        self.diagnostics_pub = self.create_publisher(GazeboSpawnerDiagnostics, 'diagnostics', 1)
+        self.diagnostics_timer = self.create_timer(0.1, self.callback_diagnostics_timer)
+        self.action_timer = self.create_timer(0.1, self.callback_action_timer)
+
+        # Connect to bridged Gazebo services via ros_gz_bridge
+        self.gazebo_spawn_service_name = '/ros_gz_bridge/create_entity'
+        self.gazebo_delete_service_name = '/ros_gz_bridge/delete_entity'
+        self.gazebo_spawn_proxy = self.create_client(SpawnEntity, self.gazebo_spawn_service_name)
+        self.gazebo_delete_proxy = self.create_client(DeleteEntity, self.gazebo_delete_service_name)
+
+        # Setup system variables
+        self.spawn_called = False
+        self.processing = False
+        self.vehicle_queue = []
+        self.queue_mutex = multiprocessing.Lock()
+        self.active_vehicles = []
+        self.assigned_ids = set()
+        self.gazebo_spawn_future = None
+        self.gazebo_delete_future = None
+        self.gazebo_spawn_request_start_time = None
+
+        # SdfToTf Publisher
+        self.sdf_to_tf_publisher = SdfTfPublisher(self, self.tf_base_link, self.tf_ignored_sensor_links)
+
+        self.is_initialized = True
+        self.get_logger().info('Initialized')
+
+    # #{ launch_px4_firmware(self, robot_params)
+    def launch_px4_firmware(self, robot_params):
+        if self.firmware_launch_delay > 0:
+            self.get_logger().info(f'Waiting for {self.firmware_launch_delay} s before launching firmware')
+            time.sleep(self.firmware_launch_delay)
+
+        name = robot_params['name']
+        self.get_logger().info(f'Launching PX4 firmware for {name}')
+
+        package_name = self.jinja_templates[robot_params['model']].package_name
+        package_path = get_package_share_directory(package_name)
+
+        romfs_path = os.path.join(str(package_path), 'ROMFS')
 
     # #}
 

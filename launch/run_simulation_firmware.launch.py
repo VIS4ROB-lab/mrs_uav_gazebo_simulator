@@ -11,9 +11,11 @@ from launch.substitutions import (
     PythonExpression,
     PathJoinSubstitution,
     TextSubstitution,
+    EnvironmentVariable,
 )
 from launch_ros.actions import PushRosNamespace
 from launch_ros.substitutions import FindPackageShare, FindPackagePrefix
+import os
 
 def generate_launch_description():
     """
@@ -32,7 +34,13 @@ def generate_launch_description():
             ]),
             description='Path to the PX4 ROMFS directory.'
         ),
-        DeclareLaunchArgument('interactive', default_value='true', description='Run PX4 in interactive mode.')
+        DeclareLaunchArgument('interactive', default_value='true', description='Run PX4 in interactive mode.'),
+        DeclareLaunchArgument(
+            'PX4_BINARY',
+            default_value=os.path.join(os.environ.get('COLCON_PREFIX_PATH', '').split(':')[0], 
+                                       '../src/PX4-Autopilot/build/px4_sitl_default/bin/px4'),
+            description='Path to the PX4 binary executable.'
+        ),
     ]
 
     px4_interactive_mode = PythonExpression([
@@ -40,9 +48,10 @@ def generate_launch_description():
     ])
 
     # This correctly launches PX4 as an external command without injecting ROS arguments.
+    # Use the PX4 executable from the PX4-Autopilot build directory
     px4_sitl_process = ExecuteProcess(
         cmd=[
-            PathJoinSubstitution([FindPackagePrefix('px4'), 'lib/px4/px4']),
+            LaunchConfiguration('PX4_BINARY'),
             PathJoinSubstitution([LaunchConfiguration('ROMFS_PATH'), 'px4fmu_common']),
             '-s',
             'etc/init.d-posix/rcS',
