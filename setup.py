@@ -26,8 +26,7 @@ setup(
     maintainer='Vojtech Spurny',
     maintainer_email='vojtech.spurny@fel.cvut.cz',
     description='The Metapackage for MRS UAV Gazebo simulation pipeline.',
-    license='BSD 3-Clause',
-    tests_require=['pytest'],
+    license='BSD-3-Clause',
     entry_points={
         'console_scripts': [
             'mrs_drone_spawner = mrs_uav_gazebo_simulator.mrs_drone_spawner:main',
